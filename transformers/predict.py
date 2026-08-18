@@ -63,11 +63,16 @@ def predict_batch(inputs, model, zh_tokenizer, en_tokenizer):
 
             decoder_output = model.decode(
                 memory, src_mask, decoder_input, tgt_mask
-            )  # decoder_output.shape: [batch_size, tgt_len, en_vocab_size]
+            )  # decoder_output.shape: [batch_size, tgt_len, d_model]
 
-            # !保存预测结果，从decoder_output取出最后一个序列就是该时间步的预测词
+            # !取最后一个时间步进行预测
+            outputs = model.generator(
+                decoder_output[:, -1, :]
+            )  # [batch_size, en_vocab_size]
+
+            # !保存预测结果
             next_token_indexes = torch.argmax(
-                decoder_output[:, -1, :],  # [batch_size, en_vocab_size]
+                outputs,  # [batch_size, en_vocab_size]
                 dim=-1,
                 keepdim=True,  # dim=-1会降维，设置keepdim保持形状为[batch_size, 1]
             )  # !从vocab_size个词里面拿到概率最大的索引就是预测词的索引  shape: [batch_size, 1]
