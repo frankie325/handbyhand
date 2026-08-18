@@ -12,6 +12,8 @@ from .config import (
     MAX_SEQ_LEN,
     LEARNING_RATE,
     EPOCHS,
+    WARMUP_STEPS,
+    CLIP_GRAD_NORM,
     MODELS_DIR,
 )
 import time
@@ -23,7 +25,7 @@ from .utils import make_std_mask
 
 
 def train_one_epoch(
-    model, data_loader, loss_fn, optimizer, device, zh_tokenizer, en_tokenizer
+    model, data_loader, loss_fn, optimizer, scheduler, device, zh_tokenizer, en_tokenizer
 ):
     model.train()
     total_loss: float = 0.0
@@ -63,9 +65,12 @@ def train_one_epoch(
         # 反向传播 + 梯度裁剪 + 参数更新
         optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
         # 防止梯度爆炸导致训练不稳定
-        # nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        if CLIP_GRAD_NORM is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=CLIP_GRAD_NORM)
+        optimizer.step()
+        # Noam 学习率调度：每个 batch 更新一次学习率
+        scheduler.step()
         total_loss += loss.item()
 
     return total_loss / len(data_loader)  # 返回平均损失
@@ -107,11 +112,29 @@ def train():
     # 会"双重 softmax"，导致损失计算错误、模型不收敛。
     loss_fn = nn.NLLLoss(ignore_index=en_tokenizer.pad_token_index)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+    # Noam 学习率调度（Transformer 论文标准做法）：
+    # lr = D_MODEL^(-0.5) * min(step^(-0.5), step * WARMUP_STEPS^(-1.5))
+    # 前 WARMUP_STEPS 步线性爬升，之后按 1/sqrt(step) 衰减
+    def lr_lambda(step: int) -> float:
+        step = max(step, 1)
+        return (D_MODEL**-0.5) * min(
+            step**-0.5, step * (WARMUP_STEPS**-1.5)
+        ) / LEARNING_RATE
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
     best_loss = float("inf")
 
     for epoch in range(1, EPOCHS + 1):
         avg_loss = train_one_epoch(
-            model, data_loader, loss_fn, optimizer, device, zh_tokenizer, en_tokenizer
+            model,
+            data_loader,
+            loss_fn,
+            optimizer,
+            scheduler,
+            device,
+            zh_tokenizer,
+            en_tokenizer,
         )
         # tensorboard 记录
         writer.add_scalar("Loss/train", avg_loss, epoch)
