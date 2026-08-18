@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+
+# 训练产物
+transformers/weights/
+transformers/logs/
+transformers/data/raw/
+transformers/data/processed/
