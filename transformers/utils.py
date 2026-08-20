@@ -24,6 +24,9 @@ def make_std_mask(tgt, padding_idx):
     # tgt_mask: [batch_size, tgt_len] -> [batch_size, 1, tgt_len]
     tgt_mask = (tgt != padding_idx).unsqueeze(-2)
 
+    # 广播
+    # tgt_mask: [batch_size, 1, tgt_len] -> [batch_size, tgt_len, tgt_len]
+    # subsequent_mask: [1, tgt_len, tgt_len] -> [batch_size, tgt_len, tgt_len]
     tgt_mask = tgt_mask & subsequent_mask(tgt_mask.size(-1)).to(
         device=tgt_mask.device,
         dtype=tgt_mask.dtype,
