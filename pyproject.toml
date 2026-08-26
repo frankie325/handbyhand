@@ -17,7 +17,6 @@ dependencies = [
 
 [tool.uv]
 package = false
-no-verify-hashes = true
 
 [[tool.uv.index]]
 name = "pytorch-cu126"
