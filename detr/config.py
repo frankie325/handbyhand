@@ -24,4 +24,4 @@ N_HEAD = 4  # 多头注意力头数
 N_LAYER = 4  # 编码器层数
 D_FF = 2048  # 前馈层网络维度
 DROPOUT = 0.1  # 注意力权重dropout概率
-EPOCHS = 30
+EPOCHS = 100

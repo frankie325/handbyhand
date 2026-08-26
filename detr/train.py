@@ -21,6 +21,8 @@ from .datasets.build import build_dataloader
 from tqdm import tqdm
 from .loss.criterion import SetCriterion
 from detr.loss.matcher import HungarianMatcher
+import math
+
 
 global_step = 0
 
@@ -139,11 +141,11 @@ def train():
         weight_decay=1e-4,
     )
 
-    # lr_scheduler = torch.optim.lr_scheduler.StepLR(
-    #     optimizer,
-    #     step_size=200,
-    #     gamma=0.1,
-    # )
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer,
+        step_size=math.floor(EPOCHS * 0.7),
+        gamma=0.1,
+    )
 
     # 计算代价矩阵，进行匈牙利匹配算法
     matcher = HungarianMatcher()
@@ -160,7 +162,7 @@ def train():
         avg_loss = train_one_epoch(
             model, dataloader, optimizer, criterion, device, writer
         )
-
+        lr_scheduler.step()
         # tensorboard 记录
         writer.add_scalar("Loss/train", avg_loss, epoch)
 
