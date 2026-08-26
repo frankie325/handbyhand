@@ -15,9 +15,8 @@ venv/
 env/
 .idea/
 .vscode/
+*data/
 
 # 训练产物
-transformers/weights/
-transformers/logs/
-transformers/data/raw/
-transformers/data/processed/
+*weights/
+*logs/
