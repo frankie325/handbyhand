@@ -1,15 +1,15 @@
 import copy
 import torch
 import torch.nn as nn
-from transformers.model.encoder import Encoder
-from transformers.model.decoder import Decoder
-from transformers.model.block.encoder_layer import EncoderLayer
-from transformers.model.block.decoder_layer import DecoderLayer
-from transformers.model.embedding.embedding import Embeddings
-from transformers.model.embedding.position_encoding import PositionalEncoding
-from transformers.model.layer.multi_headed_attention import MultiHeadedAttention
-from transformers.model.layer.position_wise_feed_forward import PositionwiseFeedForward
-from transformers.model.transformer import Transformer, Generator
+from .block.decoder_layer import DecoderLayer
+from .block.encoder_layer import EncoderLayer
+from .decoder import Decoder
+from .embedding.embedding import Embeddings
+from .embedding.position_encoding import PositionalEncoding
+from .encoder import Encoder
+from .layer.multi_headed_attention import MultiHeadedAttention
+from .layer.position_wise_feed_forward import PositionwiseFeedForward
+from .transformer import Generator, Transformer
 
 
 def make_model(

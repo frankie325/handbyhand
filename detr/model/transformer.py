@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
+from transformers import (
+    LayerNorm,
+    MultiHeadedAttention,
+    PositionwiseFeedForward,
+    SublayerConnection,
+)
 from transformers.utils import clones
-from transformers.model.layer.sub_layer_connection import SublayerConnection
-from transformers.model.layer.layer_norm import LayerNorm
-from transformers.model.layer.multi_headed_attention import MultiHeadedAttention
-from transformers.model.layer.position_wise_feed_forward import PositionwiseFeedForward
 import copy
 
 

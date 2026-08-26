@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers.utils import clones
+from ...utils import clones
 from .layer_norm import LayerNorm
 
 

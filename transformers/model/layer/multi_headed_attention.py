@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-from transformers.utils import clones
+from ...utils import clones
 
 
 # 注意力公式计算

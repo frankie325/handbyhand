@@ -1,6 +1,6 @@
 import torch.nn as nn
-from transformers.utils import clones
-from transformers.model.layer.sub_layer_connection import SublayerConnection
+from ...utils import clones
+from ..layer.sub_layer_connection import SublayerConnection
 
 
 class DecoderLayer(nn.Module):

@@ -1,6 +1,6 @@
 import torch.nn as nn
-from transformers.utils import clones
-from transformers.model.layer.sub_layer_connection import SublayerConnection
+from ...utils import clones
+from ..layer.sub_layer_connection import SublayerConnection
 
 
 # 编码器层，每个编码器层都有两个子层：一个是多头自注意力，另一个是前馈网络
