@@ -22,7 +22,7 @@ from tqdm import tqdm
 from .loss.criterion import SetCriterion
 from detr.loss.matcher import HungarianMatcher
 import math
-
+from .utils.common import get_device
 
 global_step = 0
 
@@ -67,7 +67,7 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, writer):
 
         writer.add_scalar(
             "Loss/total",
-            total_loss,
+            losses.item(),
             global_step,
         )
 
@@ -100,13 +100,8 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, writer):
 
 
 def train():
-    device = torch.device("cpu")
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+    device = get_device()
+
     print("设备:", device)
 
     # tensorboard 记录，终端切换到当前目录下，输入tensorboard --logdir=logs

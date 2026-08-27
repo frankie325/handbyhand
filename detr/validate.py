@@ -1,70 +1,17 @@
 from __future__ import annotations
-
-import argparse
-from collections import defaultdict
-from pathlib import Path
-
 import torch
 from pycocotools.cocoeval import COCOeval
 from tqdm import tqdm
-
-from detr.config import (
-    BATCH_SIZE,
-    D_FF,
-    D_MODEL,
-    DROPOUT,
-    MODELS_DIR,
-    N_HEAD,
-    N_LAYER,
-    NUM_CLASSES,
-    NUM_QUERIES,
-)
-from detr.datasets.build import DEFAULT_DATA_ROOT, build_dataloader
+from detr.datasets.build import build_dataloader
 from detr.loss.criterion import SetCriterion
 from detr.loss.matcher import HungarianMatcher
-from detr.model.detr import Detr
 from detr.utils.bos_ops import box_cxcywh_to_xyxy
-
-
-def select_device() -> torch.device:
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
-
-
-def load_model(checkpoint: Path, device: torch.device) -> Detr:
-    # checkpoint 已包含 backbone 权重，因此不再下载预训练 ResNet。
-    model = Detr(
-        num_classes=NUM_CLASSES,
-        num_queries=NUM_QUERIES,
-        d_model=D_MODEL,
-        N=N_LAYER,
-        d_ff=D_FF,
-        n_head=N_HEAD,
-        dropout=DROPOUT,
-        pretrained_backbone=False,
-    )
-
-    state_dict = torch.load(
-        checkpoint,
-        map_location="cpu",
-        weights_only=True,
-    )
-    model.load_state_dict(state_dict)
-
-    return model.to(device).eval()
-
-
-def targets_to_device(targets, device):
-    return [
-        {
-            key: value.to(device) if torch.is_tensor(value) else value
-            for key, value in target.items()
-        }
-        for target in targets
-    ]
+from .model.build import build_model
+from .utils.common import get_device
+from .config import (
+    BATCH_SIZE,
+    NUM_CLASSES,
+)
 
 
 def outputs_to_coco_results(outputs, targets, category_ids):
@@ -76,7 +23,7 @@ def outputs_to_coco_results(outputs, targets, category_ids):
     category_ids = torch.as_tensor(
         category_ids,
         device=probabilities.device,
-    )
+    ) #
     scores, category_positions = probabilities.index_select(
         dim=-1,
         index=category_ids,
@@ -129,67 +76,48 @@ def outputs_to_coco_results(outputs, targets, category_ids):
 
 @torch.inference_mode()
 def validate(model, criterion, dataloader, device):
-    loss_totals = defaultdict(float)
+    model.eval()
     coco_results = []
-    number_of_batches = 0
+    loss_sums: dict[str, float] = {}
     category_ids = dataloader.dataset.category_ids
 
     for images, padding_mask, targets in tqdm(dataloader, desc="Validation"):
         images = images.to(device)
         padding_mask = padding_mask.to(device)
-        targets = targets_to_device(targets, device)
-
+        # targets: list[ { 'labels': [num_objects], 'boxes': [num_objects, 4]} ]
+        targets = [
+            {
+                key: value.to(device) if torch.is_tensor(value) else value
+                for key, value in target.items()
+            }
+            for target in targets
+        ]
         outputs = model(images, padding_mask)
         loss_dict = criterion(outputs, targets)
-
+        # 分别累计每一项损失
         for name, value in loss_dict.items():
-            loss_totals[name] += value.item()
+            loss_sums[name] = loss_sums.get(name, 0.0) + value.item()
 
-        coco_results.extend(
-            outputs_to_coco_results(outputs, targets, category_ids)
-        )
-        number_of_batches += 1
+        coco_results.extend(outputs_to_coco_results(outputs, targets, category_ids))
 
     average_losses = {
-        name: value / number_of_batches
-        for name, value in loss_totals.items()
+        name: total / len(dataloader) for name, total in loss_sums.items()
     }
 
     return average_losses, coco_results
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--checkpoint",
-        type=Path,
-        default=MODELS_DIR / "best.pth",
-    )
-    parser.add_argument(
-        "--data-root",
-        type=Path,
-        default=DEFAULT_DATA_ROOT,
-    )
-    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="使用较小输入尺寸，只用于快速检查",
-    )
-    args = parser.parse_args()
-
-    device = select_device()
-    print("设备:", device)
+    device = get_device()
 
     dataloader = build_dataloader(
         "val",
-        root=args.data_root,
-        batch_size=args.batch_size,
+        batch_size=BATCH_SIZE,
         shuffle=False,
-        debug=args.debug,
     )
 
-    model = load_model(args.checkpoint, device)
+    model = build_model(False, device)
+
     criterion = SetCriterion(
         NUM_CLASSES,
         HungarianMatcher(),

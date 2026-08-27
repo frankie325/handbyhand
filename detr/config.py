@@ -1,5 +1,4 @@
 # config.py
-
 from pathlib import Path
 
 # 项目根目录
@@ -8,16 +7,17 @@ ROOT_DIR = Path(__file__).parent
 # 数据路径
 RAW_DATA_DIR: Path = ROOT_DIR / "data" / "raw"
 PROCESSED_DATA_DIR: Path = ROOT_DIR / "data" / "processed"
+OUTPUTS_DIR: Path = ROOT_DIR / "outputs"
 
 # 模型和日志路径
 MODELS_DIR = ROOT_DIR / "weights"
 LOG_DIR = ROOT_DIR / "logs"
 
-LR = 1e-4 # 学习率
-BACKBONE_LR = 1e-5 # 主干网络学习率
+LR = 1e-4  # 学习率
+BACKBONE_LR = 1e-5  # 主干网络学习率
 
 BATCH_SIZE = 2  # 批大小
-NUM_CLASSES = 91 # 类别数，不包括背景类
+NUM_CLASSES = 91  # 类别数，不包括背景类
 NUM_QUERIES = 100
 D_MODEL = 128  # 模型输入维度
 N_HEAD = 4  # 多头注意力头数
