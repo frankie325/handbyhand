@@ -3,11 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import resnet50, ResNet50_Weights
 import torch
-from pathlib import Path
+from ..config import MODELS_DIR
 
 # 设置预训练模型保存路径
-weights_dir = Path(__file__).resolve().parents[1] / "weights"
-torch.hub.set_dir(str(weights_dir))
+torch.hub.set_dir(str(MODELS_DIR))
 
 
 class Backbone(nn.Module):
