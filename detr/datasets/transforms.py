@@ -63,7 +63,6 @@ def crop(
 
     target["boxes"] = cropped_boxes[keep]
     target["labels"] = target["labels"][keep]
-    target["iscrowd"] = target["iscrowd"][keep]
     target["area"] = (box_sizes[:, 0] * box_sizes[:, 1])[keep]
     return cropped_image, target
 
@@ -246,7 +245,7 @@ class Normalize:
         return image, target
 
 
-def make_coco_transforms(image_set: str, debug: bool = False) -> Compose:
+def make_detection_transforms(image_set: str, debug: bool = False) -> Compose:
     """创建 DETR 论文使用的训练或验证变换。"""
     normalize = Compose(
         [

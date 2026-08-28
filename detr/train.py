@@ -3,20 +3,15 @@ from torch.utils.tensorboard import SummaryWriter
 from .config import (
     MODELS_DIR,
     BATCH_SIZE,
-    D_MODEL,
     LOG_DIR,
     NUM_CLASSES,
-    NUM_QUERIES,
-    N_LAYER,
-    D_FF,
-    DROPOUT,
-    N_HEAD,
     BACKBONE_LR,
     LR,
     EPOCHS,
 )
 import time
 from .model.detr import Detr
+from .model.build import build_model
 from .datasets.build import build_dataloader
 from tqdm import tqdm
 from .loss.criterion import SetCriterion
@@ -104,14 +99,15 @@ def train():
 
     print("设备:", device)
 
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
     # tensorboard 记录，终端切换到当前目录下，输入tensorboard --logdir=logs
     writer = SummaryWriter(log_dir=LOG_DIR / time.strftime("%Y-%m-%d_%H-%M-%S"))
 
     dataloader = build_dataloader("train", batch_size=BATCH_SIZE, shuffle=True)
 
-    model = Detr(NUM_CLASSES, NUM_QUERIES, D_MODEL, N_LAYER, D_FF, N_HEAD, DROPOUT).to(
-        device
-    )
+    model =build_model(True, device)
 
     optimizer = torch.optim.AdamW(
         [

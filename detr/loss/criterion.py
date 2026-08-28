@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.modules import loss
 from detr.utils.bos_ops import box_cxcywh_to_xyxy, generalized_box_iou
 
 
@@ -16,7 +15,7 @@ class SetCriterion(nn.Module):
             "loss_giou": 2,
         }
         self.eos_coef = eos_coef
-        empty_weight = torch.ones(self.num_classes + 1)  # 92 个 1
+        empty_weight = torch.ones(self.num_classes + 1)
         empty_weight[-1] = self.eos_coef  # 最后一位（背景）设为 0.1
         self.register_buffer("empty_weight", empty_weight)
 
@@ -56,15 +55,15 @@ class SetCriterion(nn.Module):
         )
         """
         把全部 query 标记为 no-object, target_classes: [batch_size, 100]
-        举例：batch_size = 2, num_queries = 5
+        举例：batch_size = 2, num_queries = 5，num_classes = 20
         target_classes = tensor([
-            [91, 91, 91, 91, 91],  # 图片0
-            [91, 91, 91, 91, 91],  # 图片1
+            [20, 20, 20, 20, 20],  # 图片0
+            [20, 20, 20, 20, 20],  # 图片1
         ])
         """
         target_classes = torch.full(
             src_logits.shape[:2],
-            self.num_classes,  # 填充值为91，即no-object
+            self.num_classes,  # 最后一个类别索引表示 no-object
             dtype=torch.int64,
             device=src_logits.device,
         )
@@ -79,10 +78,10 @@ class SetCriterion(nn.Module):
         target_classes[1, 0] = 2
         最终得到
         target_classes = tensor([
-            [91,  3, 91, 91, 18],
-            [ 2, 91, 91, 91, 91],
+            [20,  3, 20, 20, 18],
+            [ 2, 20, 20, 20, 20],
         ])
-        91都是表示未匹配的query
+        20 表示未匹配的 query
         """
         target_classes[idx] = target_classes_output
 

@@ -1,4 +1,4 @@
-"""Tiny COCO 数据集和 DataLoader 构建入口。"""
+"""VOC2007 数据集和 DataLoader 构建入口。"""
 
 from __future__ import annotations
 
@@ -6,36 +6,29 @@ from pathlib import Path
 
 from torch.utils.data import DataLoader
 
-from .coco import CocoDetection
+from detr.config import DATA_ROOT
+
 from .misc import collate_fn
-from .transforms import make_coco_transforms
+from .transforms import make_detection_transforms
+from .voc import VocDetection
 
 
-DEFAULT_DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
+DEFAULT_DATA_ROOT = DATA_ROOT
 
 
 def build_dataset(
     image_set: str,
     root: str | Path = DEFAULT_DATA_ROOT,
     debug: bool = False,
-) -> CocoDetection:
+) -> VocDetection:
     """构建 train 或 val 数据集。"""
     if image_set not in {"train", "val"}:
         raise ValueError(f"image_set 应为 'train' 或 'val'，收到: {image_set!r}")
 
-    root = Path(root)
-    year = "2014"
-    # train -> data/train2014 + instances_train2014.json
-    # val   -> data/val2014   + instances_val2014.json
-    image_dir = root / f"{image_set}{year}"
-    annotation_file = root / "annotations" / f"instances_{image_set}{year}.json"
-
-    # CocoDetection 负责读取图片/标注；make_coco_transforms 决定该划分
-    # 使用训练随机增强还是验证确定性预处理。
-    return CocoDetection(
-        image_dir=image_dir,
-        annotation_file=annotation_file,
-        transforms=make_coco_transforms(image_set, debug=debug),
+    return VocDetection(
+        root=Path(root),
+        image_set=image_set,
+        transforms=make_detection_transforms(image_set, debug=debug),
     )
 
 

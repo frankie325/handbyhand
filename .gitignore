@@ -16,6 +16,7 @@ env/
 .idea/
 .vscode/
 *data/
+/datasets/
 
 # 训练产物
 *weights/

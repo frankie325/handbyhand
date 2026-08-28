@@ -46,7 +46,7 @@ class MLP(nn.Module):
 class Detr(nn.Module):
     def __init__(
         self,
-        num_classes=91,  # COCO 原始类别ID范围为1~90（中间有空缺）
+        num_classes=20,  # 真实类别数，标签使用连续的 0..num_classes-1
         num_queries: int = 100,  # 解码器的query数，默认100个query
         d_model=256,
         N=6,  # 编码器和解码器的层数
@@ -75,8 +75,7 @@ class Detr(nn.Module):
 
         self.transformer = build_transformer(N, d_model, d_ff, n_head, dropout)
 
-        # num_classes + 1 是因为背景类也算一个类别
-        # 92个输出位置 = 80个真实类别 + 10个COCO ID空缺 + 1个未使用的下标0 + 1个no-object
+        # 最后一个输出位置 num_classes 专门表示 no-object。
         self.class_embed = nn.Linear(d_model, num_classes + 1)
         self.bbox_embed = MLP(d_model, d_model, 4, 3)
 
