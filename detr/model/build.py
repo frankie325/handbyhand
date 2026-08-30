@@ -33,7 +33,7 @@ def build_model(train: bool = True, device=torch.device("cpu")):
             )
         state = torch.load(checkpoint, map_location=device, weights_only=True)
         try:
-            model.load_state_dict(state)
+            model.load_state_dict(state["model"])
         except RuntimeError as error:
             raise RuntimeError(
                 f"权重 {checkpoint} 与当前 VOC20 模型不兼容。"
