@@ -21,3 +21,6 @@ env/
 # 训练产物
 *weights/
 *logs/
+
+# 输出产物
+*outputs/
