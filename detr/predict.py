@@ -101,7 +101,8 @@ def predict(image_paths: list[Path]) -> None:
 
 def main() -> None:
     # TODO: 在这里手动填写要预测的图片路径
-    image_paths: list[Path] = []
+    image_dir = Path("/Users/frank/code/ai/yolo_data/VOC2007/JPEGImages/000590.jpg")
+    image_paths: list[Path] = [image_dir]
     predict(image_paths)
 
 
