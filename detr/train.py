@@ -145,7 +145,7 @@ def train(resume=False):
     )
 
     start_epoch = 1
-    best_loss = float("-inf")
+    best_loss = float("inf")
 
     if resume:
         checkpoint = torch.load(
@@ -219,7 +219,7 @@ def train(resume=False):
         torch.save(checkpoint, MODELS_DIR / "last.pth")
 
         # 保存最佳模型
-        if avg_loss > best_loss:
+        if avg_loss < best_loss:
             best_loss = avg_loss
             torch.save(checkpoint, MODELS_DIR / "best.pth")
     writer.close()
