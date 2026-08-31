@@ -145,7 +145,7 @@ def train(resume=False):
     )
 
     start_epoch = 1
-    best_map = float("-inf")
+    best_loss = float("-inf")
 
     if resume:
         checkpoint = torch.load(
@@ -158,7 +158,6 @@ def train(resume=False):
         optimizer.load_state_dict(checkpoint["optimizer"])
         lr_scheduler.load_state_dict(checkpoint["scheduler"])
         start_epoch = checkpoint["epoch"] + 1
-        best_map = checkpoint["val_map"]
     # 计算代价矩阵，进行匈牙利匹配算法
     matcher = HungarianMatcher()
 
@@ -174,23 +173,23 @@ def train(resume=False):
         )
 
         lr_scheduler.step()
-        print("Epoch [{}/{}], Loss: {:.4f}".format(epoch, EPOCHS, avg_loss))
+        print("Epoch [{}/{}], Train Loss: {:.4f}".format(epoch, EPOCHS, avg_loss))
 
-        val_losses, val_results = validate(
-            model,
-            criterion,
-            val_loader,
-            device,
-        )
+        # 每10个epoch验证一次
+        if epoch % 10 == 0:
+            val_losses, val_results = validate(
+                model,
+                criterion,
+                val_loader,
+                device,
+            )
 
-        metrics = evaluate_voc(
-            val_results,
-            val_loader.dataset,
-        )
-        val_map = metrics["map"]
-        print(f"Epoch [{epoch}/{EPOCHS}]")
-        print(f"Train Loss: {avg_loss:.4f}")
-        print(f"Val mAP@0.5: {val_map:.4f}")
+            metrics = evaluate_voc(
+                val_results,
+                val_loader.dataset,
+            )
+            val_map = metrics["map"]
+            print(f"Epoch [{epoch}/{EPOCHS}], Val mAP@0.5: {val_map:.4f}")
         # tensorboard 记录
         writer.add_scalar("Loss/train", avg_loss, epoch)
 
@@ -215,14 +214,13 @@ def train(resume=False):
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
             "scheduler": lr_scheduler.state_dict(),
-            "val_map": val_map,
         }
         # 保存当前轮训练的模型，用于断点恢复
         torch.save(checkpoint, MODELS_DIR / "last.pth")
 
         # 保存最佳模型
-        if val_map > best_map:
-            best_map = val_map
+        if avg_loss > best_loss:
+            best_loss = avg_loss
             torch.save(checkpoint, MODELS_DIR / "best.pth")
     writer.close()
 
