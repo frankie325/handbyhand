@@ -7,8 +7,8 @@ from pathlib import Path
 
 import torch
 
-from detr.config import NUM_CLASSES
-from detr.datasets import VOC_CLASSES, build_dataloader, build_dataset
+from detr.config import NUM_CLASSES, DATASET_TYPE
+from detr.datasets import VOC_CLASSES, build_dataloader, build_dataset, DATASET_REGISTRY
 from detr.datasets.build import DEFAULT_DATA_ROOT
 from detr.loss.criterion import SetCriterion
 from detr.loss.matcher import HungarianMatcher
@@ -55,8 +55,13 @@ def main() -> None:
     args = parser.parse_args()
 
     debug = not args.full_resolution
-    train_dataset = build_dataset("train", root=args.data_root, debug=debug)
-    val_dataset = build_dataset("val", root=args.data_root, debug=debug)
+    dataset_cls = DATASET_REGISTRY[DATASET_TYPE]
+    train_dataset = build_dataset(
+        "train", root=args.data_root, dataset_cls=dataset_cls, debug=debug
+    )
+    val_dataset = build_dataset(
+        "val", root=args.data_root, dataset_cls=dataset_cls, debug=debug
+    )
     assert len(train_dataset) == 2501
     assert len(val_dataset) == 2510
     assert train_dataset.classes == val_dataset.classes == VOC_CLASSES
@@ -77,6 +82,7 @@ def main() -> None:
     loader = build_dataloader(
         "val",
         root=args.data_root,
+        dataset_cls=dataset_cls,
         batch_size=args.batch_size,
         shuffle=False,
         debug=debug,

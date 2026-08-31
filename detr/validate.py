@@ -5,8 +5,8 @@ import math
 import torch
 from tqdm import tqdm
 
-from detr.config import BATCH_SIZE, NUM_CLASSES
-from detr.datasets import VOC_CLASSES, VocDetection
+from detr.config import BATCH_SIZE, NUM_CLASSES, DATASET_TYPE
+from detr.datasets import VocDetection, RaodDetection, DATASET_REGISTRY
 from detr.datasets.build import build_dataloader
 from detr.loss.criterion import SetCriterion
 from detr.loss.matcher import HungarianMatcher
@@ -83,7 +83,7 @@ def voc2007_ap(recalls: list[float], precisions: list[float]) -> float:
 
 def evaluate_voc(
     results: list[dict],
-    dataset: VocDetection,
+    dataset: VocDetection | RaodDetection,
     iou_threshold: float = 0.5,
 ) -> dict:
     """按 VOC2007 规则计算每类 AP 和 mAP。
@@ -95,7 +95,8 @@ def evaluate_voc(
         raise ValueError("iou_threshold 必须位于 (0, 1] 范围")
 
     annotations = {
-        image_id: dataset.get_ground_truth(image_id) for image_id in dataset.ids
+        image_id: dataset.get_ground_truth(image_id)
+        for image_id in dataset.ids
     }
     per_class_ap: dict[str, float] = {}
     for class_index, class_name in enumerate(dataset.classes):
@@ -114,7 +115,11 @@ def evaluate_voc(
             positive_count += int((~difficult).sum().item())
 
         detections = sorted(
-            (result for result in results if int(result["label"]) == class_index),
+            (
+                result
+                for result in results
+                if int(result["label"]) == class_index
+            ),
             key=lambda result: float(result["score"]),
             reverse=True,
         )
@@ -124,12 +129,17 @@ def evaluate_voc(
         for detection in detections:
             image_id = str(detection["image_id"])
             image_ground_truth = ground_truth.get(image_id)
-            if image_ground_truth is None or image_ground_truth["boxes"].numel() == 0:
+            if (
+                image_ground_truth is None
+                or image_ground_truth["boxes"].numel() == 0
+            ):
                 true_positives.append(0.0)
                 false_positives.append(1.0)
                 continue
 
-            detection_box = torch.as_tensor(detection["bbox"], dtype=torch.float32)
+            detection_box = torch.as_tensor(
+                detection["bbox"], dtype=torch.float32
+            )
             overlaps = _box_iou(detection_box, image_ground_truth["boxes"])
             best_overlap, best_index_tensor = overlaps.max(dim=0)
             best_index = int(best_index_tensor.item())
@@ -157,15 +167,21 @@ def evaluate_voc(
         cumulative_fp = 0.0
         recalls: list[float] = []
         precisions: list[float] = []
-        for true_positive, false_positive in zip(true_positives, false_positives):
+        for true_positive, false_positive in zip(
+            true_positives, false_positives
+        ):
             cumulative_tp += true_positive
             cumulative_fp += false_positive
             recalls.append(cumulative_tp / positive_count)
-            precisions.append(cumulative_tp / max(cumulative_tp + cumulative_fp, 1.0))
+            precisions.append(
+                cumulative_tp / max(cumulative_tp + cumulative_fp, 1.0)
+            )
 
         per_class_ap[class_name] = voc2007_ap(recalls, precisions)
 
-    finite_aps = [value for value in per_class_ap.values() if math.isfinite(value)]
+    finite_aps = [
+        value for value in per_class_ap.values() if math.isfinite(value)
+    ]
     mean_ap = sum(finite_aps) / len(finite_aps) if finite_aps else math.nan
     return {
         "iou_threshold": iou_threshold,
@@ -207,6 +223,7 @@ def main() -> None:
     dataloader = build_dataloader(
         "val",
         batch_size=BATCH_SIZE,
+        dataset_cls=DATASET_REGISTRY[DATASET_TYPE],
         shuffle=False,
     )
     model = build_model(False, device)
@@ -223,10 +240,12 @@ def main() -> None:
     print(f"total: {sum(losses.values()):.4f}")
 
     metrics = evaluate_voc(results, dataloader.dataset)
-    print("\nVOC2007 AP@0.5 (11-point):")
-    for class_name in VOC_CLASSES:
+    print(f"\n{DATASET_TYPE.upper()} AP@0.5 (11-point):")
+    for class_name in dataloader.dataset.classes:
         average_precision = metrics["per_class_ap"][class_name]
-        display_value = "N/A" if math.isnan(average_precision) else f"{average_precision:.4f}"
+        display_value = (
+            "N/A" if math.isnan(average_precision) else f"{average_precision:.4f}"
+        )
         print(f"{class_name:>12}: {display_value}")
     print(f"mAP@0.5: {metrics['map']:.4f}")
 
