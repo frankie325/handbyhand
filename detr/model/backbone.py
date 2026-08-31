@@ -21,7 +21,7 @@ class Backbone(nn.Module):
         weights = ResNet50_Weights.DEFAULT if pretrained_backbone else None
         resnet = resnet50(weights=weights)
         self.num_channels = 2048
-        # ResNet 离得的 avgpool 和 fc 会把空间维度压成一个向量，DETR 需要
+        # ResNet 里的 avgpool 和 fc 会把空间维度压成一个向量，DETR 需要
         # 保留 H_feature × W_feature 的网格，所以这里只取卷积部分。
         self.stem = nn.Sequential(
             resnet.conv1,
