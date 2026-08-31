@@ -57,7 +57,7 @@ class Backbone(nn.Module):
             # 之类没有明确含义的中间值。
             feature_mask = F.interpolate(
                 padding_mask[:, None].float(),  # [B, 1, H, W]
-                size=features.shape[-2:],  # [B, 1, H/32, W/32]
+                size=features.shape[-2:],  # height和width维进行下采样 [H/32, W/32]
                 mode="nearest",
             )[:, 0].to(
                 torch.bool
