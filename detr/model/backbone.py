@@ -9,6 +9,56 @@ from ..config import MODELS_DIR
 torch.hub.set_dir(str(MODELS_DIR))
 
 
+class FrozenBatchNorm2d(nn.Module):
+    """
+    BatchNorm 的 running_mean 和 running_var 仍可能在 model.train() 时更新。
+    running_mean和running_var不是当前 batch 的统计量，而是训练过程中累计得到的滑动平均统计量。
+    FrozenBatchNorm2d 使用预训练阶段得到的固定统计量，固定 running_mean，固定 running_var，
+    不使用当前 batch 的均值和方差进行计算，避免小 batch 训练时 BatchNorm 统计量不稳定。
+    """
+
+    def __init__(self, num_features: int, eps: float = 1e-5):
+        # num_features：通道数
+        super().__init__()
+        # load_state_dict时会覆盖weight、bias、running_mean、running_var的初始值
+        self.register_buffer("weight", torch.ones(num_features))
+        self.register_buffer("bias", torch.zeros(num_features))
+        self.register_buffer("running_mean", torch.zeros(num_features))
+        self.register_buffer("running_var", torch.ones(num_features))
+        self.eps: float = eps
+
+    def _load_from_state_dict(
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
+    ) -> None:
+        # 加载的预训练模型包含num_batches_tracked， 但当前FrozenBatchNorm2d不包含 ，在加载时需要移除，否则load_state_dict会报错
+        state_dict.pop(prefix + "num_batches_tracked", None)
+        super()._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        )
+
+    def forward(self, x):
+        weight = self.weight.reshape(1, -1, 1, 1)
+        bias = self.bias.reshape(1, -1, 1, 1)
+        running_mean = self.running_mean.reshape(1, -1, 1, 1)
+        running_var = self.running_var.reshape(1, -1, 1, 1)
+        # 计算时，广播到[batch_size, num_features, height, width]
+        scale = weight * (running_var + self.eps).rsqrt()  # rsqrt为1/sqrt(x)
+        return x * scale - running_mean * scale + bias
+
+
 class Backbone(nn.Module):
     def __init__(
         self,
@@ -19,7 +69,7 @@ class Backbone(nn.Module):
 
         # 使用ResNet50作为主干网络，将图像下采样32倍
         weights = ResNet50_Weights.DEFAULT if pretrained_backbone else None
-        resnet = resnet50(weights=weights)
+        resnet = resnet50(weights=weights, norm_layer=FrozenBatchNorm2d)
         self.num_channels = 2048
         # ResNet 里的 avgpool 和 fc 会把空间维度压成一个向量，DETR 需要
         # 保留 H_feature × W_feature 的网格，所以这里只取卷积部分。
