@@ -7,12 +7,14 @@ from pathlib import Path
 
 import torch
 
-from detr.config import NUM_CLASSES, DATASET_TYPE
-from detr.datasets import VOC_CLASSES, build_dataloader, build_dataset, DATASET_REGISTRY
-from detr.datasets.build import DEFAULT_DATA_ROOT
-from detr.loss.criterion import SetCriterion
-from detr.loss.matcher import HungarianMatcher
-from detr.model.detr import Detr
+from .config import DATASET_ROOT, NUM_CLASSES, DATASET_TYPE
+from .datasets import build_dataloader, build_dataset, DATASET_REGISTRY
+from .loss.criterion import SetCriterion
+from .loss.matcher import HungarianMatcher
+from .model.detr import Detr
+
+
+dataset_cls = DATASET_REGISTRY[DATASET_TYPE]
 
 
 def check_targets(targets: list[dict]) -> None:
@@ -23,7 +25,7 @@ def check_targets(targets: list[dict]) -> None:
         assert torch.isfinite(boxes).all()
         assert ((boxes >= 0) & (boxes <= 1)).all()
         assert labels.dtype == torch.int64
-        assert ((labels >= 0) & (labels < len(VOC_CLASSES))).all()
+        assert ((labels >= 0) & (labels < len(dataset_cls.classes))).all()
         assert len(boxes) == len(labels) == len(target["area"])
         assert isinstance(target["image_id"], str)
 
@@ -44,7 +46,7 @@ def check_padding_mask(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="检查 DETR VOC2007 数据管线")
-    parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
+    parser.add_argument("--data-root", type=Path, default=DATASET_ROOT)
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument(
         "--full-resolution",
@@ -55,17 +57,9 @@ def main() -> None:
     args = parser.parse_args()
 
     debug = not args.full_resolution
-    dataset_cls = DATASET_REGISTRY[DATASET_TYPE]
-    train_dataset = build_dataset(
-        "train", root=args.data_root, dataset_cls=dataset_cls, debug=debug
-    )
-    val_dataset = build_dataset(
-        "val", root=args.data_root, dataset_cls=dataset_cls, debug=debug
-    )
-    assert len(train_dataset) == 2501
-    assert len(val_dataset) == 2510
-    assert train_dataset.classes == val_dataset.classes == VOC_CLASSES
-    assert len(train_dataset.class_to_idx) == NUM_CLASSES == 20
+    train_dataset = build_dataset("train", dataset_cls=dataset_cls, debug=debug)
+    val_dataset = build_dataset("val", dataset_cls=dataset_cls, debug=debug)
+    assert train_dataset.classes == val_dataset.classes == dataset_cls.classes
     assert set(train_dataset.ids).isdisjoint(val_dataset.ids)
 
     first_image_id = train_dataset.ids[0]
@@ -94,7 +88,7 @@ def main() -> None:
     check_padding_mask(padding_mask, targets)
 
     print(f"train: {len(train_dataset)} 张，val: {len(val_dataset)} 张")
-    print(f"classes: {len(VOC_CLASSES)}")
+    print(f"classes: {len(dataset_cls.classes)}")
     print(
         f"difficult: train={train_dataset.num_difficult}, "
         f"val={val_dataset.num_difficult}"

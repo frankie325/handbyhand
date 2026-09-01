@@ -21,12 +21,12 @@ class RaodDetection(Dataset):
 
     def __init__(
         self,
-        root: str | Path,
+        root: Path,
         image_set: str,
         transforms: Callable | None = None,
         train_ratio: float = 0.8,
     ) -> None:
-        self.root = Path(root)
+        self.root = root / "RAOD-benchmark"
         self.image_set = image_set
         self._transforms = transforms
 
@@ -53,7 +53,9 @@ class RaodDetection(Dataset):
             raise ValueError(f"image_set 应为 'train' 或 'val'，收到: {image_set!r}")
 
         # 预解析标注
-        self._records = {image_id: self._parse_annotation(image_id) for image_id in self.ids}
+        self._records = {
+            image_id: self._parse_annotation(image_id) for image_id in self.ids
+        }
 
     def _parse_annotation(self, image_id: str) -> dict:
         label_file = self.label_dir / f"{image_id}.txt"
@@ -71,28 +73,38 @@ class RaodDetection(Dataset):
                     parts = line.strip().split()
                     if not parts:
                         continue
-                    
+
                     class_id = int(parts[0])
                     # YOLO 格式: class_id, x_center, y_center, w, h (均为归一化坐标)
                     cx, cy, w, h = map(float, parts[1:])
-                    
+
                     # 转换为绝对 xyxy 坐标
                     xmin = (cx - w / 2) * width
                     ymin = (cy - h / 2) * height
                     xmax = (cx + w / 2) * width
                     ymax = (cy + h / 2) * height
-                    
+
+                    # 标注可能因四舍五入超出图片边界，例如 xmin=-1。
+                    # 将框裁剪到有效图像区域 [0, width] × [0, height]。
+                    xmin = max(0.0, min(xmin, float(width)))
+                    ymin = max(0.0, min(ymin, float(height)))
+                    xmax = max(0.0, min(xmax, float(width)))
+                    ymax = max(0.0, min(ymax, float(height)))
+
+                    # 裁剪后没有有效面积的框直接丢弃，避免产生无效监督目标。
+                    if xmax <= xmin or ymax <= ymin:
+                        continue
+
                     boxes.append([xmin, ymin, xmax, ymax])
                     labels.append(class_id)
 
         boxes_tensor = torch.tensor(boxes, dtype=torch.float32).reshape(-1, 4)
         labels_tensor = torch.tensor(labels, dtype=torch.int64)
-        
-        areas = (
-            (boxes_tensor[:, 2] - boxes_tensor[:, 0])
-            * (boxes_tensor[:, 3] - boxes_tensor[:, 1])
+
+        areas = (boxes_tensor[:, 2] - boxes_tensor[:, 0]) * (
+            boxes_tensor[:, 3] - boxes_tensor[:, 1]
         )
-        
+
         return {
             "image_id": image_id,
             "filename": f"{image_id}.jpg",
@@ -138,5 +150,5 @@ class RaodDetection(Dataset):
 
         if self._transforms is not None:
             image, target = self._transforms(image, target)
-        
+
         return image, target

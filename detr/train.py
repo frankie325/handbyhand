@@ -15,15 +15,13 @@ from .model.build import build_model
 from .datasets import build_dataloader, DATASET_REGISTRY
 from tqdm import tqdm
 from .loss.criterion import SetCriterion
-from detr.loss.matcher import HungarianMatcher
+from .loss.matcher import HungarianMatcher
 import math
 from .utils.common import get_device
 from .validate import validate, evaluate_voc
 
 
-def train_one_epoch(
-    epoch, model, dataloader, optimizer, criterion, device, writer
-):
+def train_one_epoch(epoch, model, dataloader, optimizer, criterion, device, writer):
     model.train()
     total_loss: float = 0.0
     for index, (images, padding_mask, targets) in enumerate(
@@ -105,9 +103,7 @@ def train(resume=False):
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 
     # tensorboard 记录，终端切换到当前目录下，输入tensorboard --logdir=logs
-    writer = SummaryWriter(
-        log_dir=LOG_DIR / time.strftime("%Y-%m-%d_%H-%M-%S")
-    )
+    writer = SummaryWriter(log_dir=LOG_DIR / time.strftime("%Y-%m-%d_%H-%M-%S"))
 
     train_loader = build_dataloader(
         "train",

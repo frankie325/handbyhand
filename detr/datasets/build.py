@@ -2,23 +2,18 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from torch.utils.data import DataLoader, Dataset
 
-from detr.config import DATA_ROOT
+from ..config import DATASET_ROOT
 
 from .misc import collate_fn
 from .transforms import make_detection_transforms
 from .voc import VocDetection
 
 
-DEFAULT_DATA_ROOT = DATA_ROOT
-
-
 def build_dataset(
     image_set: str,
-    root: str | Path = DEFAULT_DATA_ROOT,
     dataset_cls: type[Dataset] = VocDetection,
     debug: bool = False,
 ) -> Dataset:
@@ -27,9 +22,8 @@ def build_dataset(
         raise ValueError(f"image_set 应为 'train' 或 'val'，收到: {image_set!r}")
 
     transforms = make_detection_transforms(image_set, debug=debug)
-    
     return dataset_cls(
-        root=Path(root),
+        root=DATASET_ROOT,
         image_set=image_set,
         transforms=transforms,
     )
@@ -37,7 +31,6 @@ def build_dataset(
 
 def build_dataloader(
     image_set: str,
-    root: str | Path = DEFAULT_DATA_ROOT,
     dataset_cls: type[Dataset] = VocDetection,
     batch_size: int = 2,
     shuffle: bool | None = None,
@@ -47,9 +40,7 @@ def build_dataloader(
     pin_memory: bool = False,
 ) -> DataLoader:
     """构建能直接送入 Detr.forward 的 DataLoader。"""
-    dataset = build_dataset(
-        image_set=image_set, root=root, dataset_cls=dataset_cls, debug=debug
-    )
+    dataset = build_dataset(image_set=image_set, dataset_cls=dataset_cls, debug=debug)
     if shuffle is None:
         # 训练集默认打乱；验证集保持固定顺序，便于稳定复现评估结果。
         shuffle = image_set == "train"

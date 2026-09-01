@@ -35,7 +35,9 @@ VOC_CLASSES = (
 )
 
 
-def _required_text(element: ElementTree.Element, path: str, annotation_file: Path) -> str:
+def _required_text(
+    element: ElementTree.Element, path: str, annotation_file: Path
+) -> str:
     value = element.findtext(path)
     if value is None or not value.strip():
         raise ValueError(f"标注 {annotation_file} 缺少字段: {path}")
@@ -54,14 +56,14 @@ class VocDetection(Dataset):
 
     def __init__(
         self,
-        root: str | Path,
+        root: Path,
         image_set: str,
         transforms: Callable | None = None,
     ) -> None:
         if image_set not in {"train", "val"}:
             raise ValueError(f"image_set 应为 'train' 或 'val'，收到: {image_set!r}")
 
-        self.root = Path(root)
+        self.root = root / "VOC2007"
         self.image_set = image_set
         self.image_dir = self.root / "JPEGImages"
         self.annotation_dir = self.root / "Annotations"
@@ -74,14 +76,20 @@ class VocDetection(Dataset):
         if not self.split_file.is_file():
             raise FileNotFoundError(f"VOC 划分文件不存在: {self.split_file}")
 
-        ids = [line.strip() for line in self.split_file.read_text().splitlines() if line.strip()]
+        ids = [
+            line.strip()
+            for line in self.split_file.read_text().splitlines()
+            if line.strip()
+        ]
         if not ids:
             raise ValueError(f"VOC 划分文件为空: {self.split_file}")
         if len(ids) != len(set(ids)):
             raise ValueError(f"VOC 划分文件包含重复图片 ID: {self.split_file}")
 
         self.ids = tuple(ids)
-        self._records = {image_id: self._parse_annotation(image_id) for image_id in self.ids}
+        self._records = {
+            image_id: self._parse_annotation(image_id) for image_id in self.ids
+        }
         self.num_difficult = sum(
             int(record["difficult"].sum().item()) for record in self._records.values()
         )
@@ -138,9 +146,8 @@ class VocDetection(Dataset):
         boxes_tensor = torch.tensor(boxes, dtype=torch.float32).reshape(-1, 4)
         labels_tensor = torch.tensor(labels, dtype=torch.int64)
         difficult_tensor = torch.tensor(difficult, dtype=torch.bool)
-        areas = (
-            (boxes_tensor[:, 2] - boxes_tensor[:, 0])
-            * (boxes_tensor[:, 3] - boxes_tensor[:, 1])
+        areas = (boxes_tensor[:, 2] - boxes_tensor[:, 0]) * (
+            boxes_tensor[:, 3] - boxes_tensor[:, 1]
         )
         size = torch.tensor([height, width], dtype=torch.int64)
         return {

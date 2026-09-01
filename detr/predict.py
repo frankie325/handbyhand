@@ -6,9 +6,10 @@ import torch
 from PIL import Image, ImageDraw
 
 from .model.build import build_model
-from detr.datasets import VOC_CLASSES
-from detr.datasets.transforms import make_detection_transforms
-from detr.utils.bos_ops import box_cxcywh_to_xyxy
+from .config import DATASET_TYPE
+from .datasets import DATASET_REGISTRY
+from .datasets.transforms import make_detection_transforms
+from .utils.bos_ops import box_cxcywh_to_xyxy
 from .utils.common import get_device
 from .config import OUTPUTS_DIR
 
@@ -78,7 +79,8 @@ def predict(image_paths: list[Path]) -> None:
 
         for score, label, box in zip(scores, labels, boxes):
             x_min, y_min, x_max, y_max = box.tolist()
-            category_name = VOC_CLASSES[int(label)]
+            dataset_cls = DATASET_REGISTRY[DATASET_TYPE]
+            category_name = dataset_cls.classes[int(label)]
             text = f"{category_name} {score.item():.2f}"
 
             drawer.rectangle(

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from detr.model.transformer import build_transformer
+from .transformer import build_transformer
 from .backbone import Backbone
 from .position_encoding import PositionEmbeddingSine
 

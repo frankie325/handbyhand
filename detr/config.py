@@ -5,10 +5,8 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 
 # 数据路径
-DATA_ROOT: Path = ROOT_DIR.parent / "datasets" / "RAOD-benchmark"
+DATASET_ROOT: Path = ROOT_DIR.parent / "datasets"
 DATASET_TYPE = "raod"  # "voc" 或 "raod"
-RAW_DATA_DIR: Path = ROOT_DIR / "data" / "raw"
-PROCESSED_DATA_DIR: Path = ROOT_DIR / "data" / "processed"
 OUTPUTS_DIR: Path = ROOT_DIR / "outputs"
 
 # 模型和日志路径
