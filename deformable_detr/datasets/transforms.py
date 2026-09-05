@@ -37,12 +37,15 @@ def _resize_shape(
 
 def resize(
     image: Image.Image,
-    target: Target,
+    target: Target | None,
     short_side: int,
     max_size: int,
-) -> tuple[Image.Image, Target]:
+) -> tuple[Image.Image, Target | None]:
     output_size = _resize_shape(image.size, short_side, max_size)
     resized_image = F.resize(image, output_size)
+
+    if target is None:
+        return resized_image, None
 
     old_width, old_height = image.size
     new_width, new_height = resized_image.size
@@ -65,9 +68,12 @@ def resize(
 
 def horizontal_flip(
     image: Image.Image,
-    target: Target,
-) -> tuple[Image.Image, Target]:
+    target: Target | None,
+) -> tuple[Image.Image, Target | None]:
     flipped_image = F.hflip(image)
+    if target is None:
+        return flipped_image, None
+
     width, _ = image.size
     target = target.copy()
     boxes = target["boxes"]
@@ -92,7 +98,7 @@ class RandomHorizontalFlip:
     def __init__(self, probability: float = 0.5):
         self.probability = probability
 
-    def __call__(self, image: Image.Image, target: Target):
+    def __call__(self, image: Image.Image, target: Target | None):
         if random.random() < self.probability:
             return horizontal_flip(image, target)
         return image, target
@@ -105,12 +111,12 @@ class RandomResize:
         self.sizes = tuple(sizes)
         self.max_size = max_size
 
-    def __call__(self, image: Image.Image, target: Target):
+    def __call__(self, image: Image.Image, target: Target | None):
         return resize(image, target, random.choice(self.sizes), self.max_size)
 
 
 class ToTensor:
-    def __call__(self, image: Image.Image, target: Target):
+    def __call__(self, image: Image.Image, target: Target | None):
         return F.to_tensor(image), target
 
 
@@ -121,8 +127,11 @@ class Normalize:
         self.mean = tuple(mean)
         self.std = tuple(std)
 
-    def __call__(self, image: torch.Tensor, target: Target):
+    def __call__(self, image: torch.Tensor, target: Target | None):
         image = F.normalize(image, mean=self.mean, std=self.std)
+        if target is None:
+            return image, None
+
         target = target.copy()
         boxes = target["boxes"]
         assert isinstance(boxes, torch.Tensor)
