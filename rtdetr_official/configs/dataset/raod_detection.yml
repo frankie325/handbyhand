@@ -1,0 +1,34 @@
+task: detection
+
+num_classes: 1
+remap_mscoco_category: False
+
+train_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    img_folder: ../datasets/RAOD-benchmark/select_1000_images
+    ann_file: ../datasets/RAOD-benchmark/annotations/instances_train.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: True
+  batch_size: 2
+  num_workers: 4
+  drop_last: True
+
+val_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    img_folder: ../datasets/RAOD-benchmark/select_1000_images
+    ann_file: ../datasets/RAOD-benchmark/annotations/instances_val.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: False
+  batch_size: 2
+  num_workers: 4
+  drop_last: False

@@ -1,0 +1,9 @@
+# The source in this directory is imported from the official lyuwenyu/RT-DETR
+# PyTorch implementation. These ranges match the root project's Python 3.14
+# environment and the torchvision tv_tensors compatibility shim in src/data.
+torch>=2.10
+torchvision>=0.25
+pycocotools>=2.0
+PyYAML>=6.0
+scipy>=1.18
+transformers>=4.45

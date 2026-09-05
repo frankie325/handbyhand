@@ -1,0 +1,26 @@
+__include__: [
+  '../dataset/raod_detection.yml',
+  '../runtime.yml',
+  './include/dataloader.yml',
+  './include/optimizer.yml',
+  './include/rtdetr_r50vd.yml',
+]
+
+output_dir: ./output/rtdetr_r50vd_6x_raod
+
+num_classes: 1
+remap_mscoco_category: False
+
+train_dataloader:
+  batch_size: 4
+  num_workers: 4
+
+val_dataloader:
+  batch_size: 4
+  num_workers: 4
+
+# Keep the official RT-DETR R50 configuration and its three feature levels
+# (stride 8/16/32), which is important for the small objects in RAOD.
+PResNet:
+  depth: 50
+  pretrained: True
