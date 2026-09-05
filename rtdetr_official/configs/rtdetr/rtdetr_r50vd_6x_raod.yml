@@ -8,15 +8,21 @@ __include__: [
 
 output_dir: ./output/rtdetr_r50vd_6x_raod
 
+# RAOD-specific training overrides.
+epoches: 100
+
+# Save an additional numbered checkpoint every 10 epochs.
+checkpoint_step: 10
+
 num_classes: 1
 remap_mscoco_category: False
 
 train_dataloader:
-  batch_size: 4
+  batch_size: 8
   num_workers: 4
 
 val_dataloader:
-  batch_size: 4
+  batch_size: 8
   num_workers: 4
 
 # Keep the official RT-DETR R50 configuration and its three feature levels

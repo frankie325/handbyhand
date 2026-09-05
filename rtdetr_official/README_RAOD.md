@@ -26,6 +26,9 @@ python tools/train.py \
 The first run downloads the official ResNet-50 vd pretrained backbone because
 `PResNet.pretrained` is enabled. Checkpoints and logs are written to
 `rtdetr_official/output/rtdetr_r50vd_6x_raod/`.
+The rolling `checkpoint.pth` is overwritten each epoch, and a numbered
+checkpoint is saved every 10 epochs. `best_stat` only records the best
+validation metric in the log; no separate best model is saved.
 
 To evaluate a saved checkpoint:
 

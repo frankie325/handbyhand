@@ -42,8 +42,8 @@ class DetSolver(BaseSolver):
             
             if self.output_dir:
                 checkpoint_paths = [self.output_dir / 'checkpoint.pth']
-                # extra checkpoint before LR drop and every 100 epochs
-                if (epoch + 1) % args.checkpoint_step == 0:
+                # Save optional periodic archives; checkpoint.pth is always rolling.
+                if args.checkpoint_step > 0 and (epoch + 1) % args.checkpoint_step == 0:
                     checkpoint_paths.append(self.output_dir / f'checkpoint{epoch:04}.pth')
                 for checkpoint_path in checkpoint_paths:
                     dist.save_on_master(self.state_dict(epoch), checkpoint_path)
@@ -53,7 +53,6 @@ class DetSolver(BaseSolver):
                 module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir
             )
 
-            # TODO 
             for k in test_stats.keys():
                 if k in best_stat:
                     best_stat['epoch'] = epoch if test_stats[k][0] > best_stat[k] else best_stat['epoch']
@@ -61,6 +60,7 @@ class DetSolver(BaseSolver):
                 else:
                     best_stat['epoch'] = epoch
                     best_stat[k] = test_stats[k][0]
+
             print('best_stat: ', best_stat)
 
 
