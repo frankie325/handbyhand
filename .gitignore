@@ -15,8 +15,6 @@ venv/
 env/
 .idea/
 .vscode/
-.codegraph/
-.cursor/
 *data/
 /datasets/
 
