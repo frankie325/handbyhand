@@ -71,6 +71,7 @@ class Backbone(nn.Module):
         weights = ResNet50_Weights.DEFAULT if pretrained_backbone else None
         resnet = resnet50(weights=weights, norm_layer=FrozenBatchNorm2d)
         self.num_channels = [512, 1024, 2048]
+        self.strides = [8, 16, 32]
         # ResNet 里的 avgpool 和 fc 会把空间维度压成一个向量，DETR 需要
         # 保留 H_feature × W_feature 的网格，所以这里只取卷积部分。
         self.stem = nn.Sequential(
@@ -104,8 +105,10 @@ class Backbone(nn.Module):
         else:
             # 如果padding_mask为None，则返回全False的mask [B, H/下采样倍数, W/下采样倍数]
             feature_mask = torch.zeros(
-                feature.shape[0], feature.shape[-2], feature.shape(-1)
-            ).to(torch.bool)
+                (feature.shape[0], feature.shape[-2], feature.shape[-1]),
+                dtype=torch.bool,
+                device=feature.device,
+            )
         return feature_mask
 
     def forward(self, images, padding_mask=None):
