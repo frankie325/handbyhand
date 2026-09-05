@@ -6,18 +6,18 @@ ROOT_DIR = Path(__file__).parent
 
 # 数据路径
 DATASET_ROOT: Path = ROOT_DIR.parent / "datasets"
-DATASET_TYPE = "raod"  # "voc" 或 "raod"
+DATASET_TYPE = "voc"  # "voc" 或 "raod"
 OUTPUTS_DIR: Path = ROOT_DIR / "outputs"
 
 # 模型和日志路径
-MODELS_DIR = ROOT_DIR / "weights" / "raod"
+MODELS_DIR = ROOT_DIR / "weights"
 LOG_DIR = ROOT_DIR / "logs"
 
 LR = 1e-4  # 学习率
 BACKBONE_LR = 1e-5  # 主干网络学习率
 
 BATCH_SIZE = 8  # 批大小
-NUM_CLASSES = 1  # RAOD 只有 1 类，不包括 no-object
+NUM_CLASSES = 20  # RAOD 只有 1 类，不包括 no-object
 NUM_QUERIES = 100
 D_MODEL = 256  # 模型输入维度
 N_HEAD = 4  # 多头注意力头数
