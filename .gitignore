@@ -15,7 +15,12 @@ venv/
 env/
 .idea/
 .vscode/
+.codegraph/
+.cursor/
 *data/
+!rtdetr_official/src/data/
+!rtdetr_official/src/data/**
+rtdetr_official/src/data/**/__pycache__/
 /datasets/
 
 # 训练产物
