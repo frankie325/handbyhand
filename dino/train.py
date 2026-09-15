@@ -116,7 +116,7 @@ def train_dino():
         global_crops_scale=(0.4, 1.0),  # global_crop的裁剪比例
         local_crops_scale=(0.05, 0.4),  # local_crop的裁剪比例
         local_crops_number=4,  # local_crop的数量
-        epochs=30,
+        epochs=300,
         lr=0.0005,
         min_lr=1e-6,
         warmup_epochs=10,  # 预热轮数
@@ -290,6 +290,9 @@ def train_dino():
         dino_loss=dino_loss,
     )
     start_epoch = to_restore["epoch"]
+
+    # 确保输出目录存在，否则 torch.save 会报 Parent directory does not exist
+    os.makedirs(args.output_dir, exist_ok=True)
     start_time = time.time()
     print("Starting DINO training !")
     for epoch in range(start_epoch, args.epochs):
