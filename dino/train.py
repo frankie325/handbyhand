@@ -353,7 +353,7 @@ def train_one_epoch(
 ):
     total_loss = 0
     logs = {}
-    for it, (images, labels) in tqdm(enumerate(data_loader)):
+    for it, (images, labels) in enumerate(tqdm(data_loader)):
         # images = [
         #     tensor[B, 3, 224, 224],   # global crop 1
         #     tensor[B, 3, 224, 224],   # global crop 2
