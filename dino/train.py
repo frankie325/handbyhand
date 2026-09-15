@@ -132,7 +132,7 @@ def train_dino():
         dist_url="env://",
         seed=0,
         batch_size_per_gpu=8,
-        output_dir=f"{root}/outputs",
+        output_dir=f"{root}/weights",
         saveckp_freq=20,  # 隔多少轮保存一次权重
     )
 
