@@ -18,9 +18,9 @@ env/
 .codegraph/
 .cursor/
 *data/
-!rtdetr_official/src/data/
-!rtdetr_official/src/data/**
-rtdetr_official/src/data/**/__pycache__/
+/rf-detr/
+/rtdetr_official/
+/dino_official/
 /datasets/
 
 # 训练产物
