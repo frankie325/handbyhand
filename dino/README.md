@@ -4,10 +4,15 @@
 
 ## 1. 数据集目录
 
-训练脚本默认读取：
+训练使用 `train`，k-NN evaluation 使用 `train` 建立特征库并在 `val` 上评估：
 
 ```text
 datasets/imagenette2-160/train/
+├── n01440764/
+├── n02102040/
+└── ...
+
+datasets/imagenette2-160/val/
 ├── n01440764/
 ├── n02102040/
 └── ...
@@ -54,21 +59,24 @@ cd /Users/frank/code/ai/handbyhand
 
 | 参数 | 默认值 |
 | --- | --- |
-| 模型 | `vit_b_16` |
-| 每张 GPU 的 batch size | `8` |
-| 训练轮数 | `30` |
+| 模型 | `vit_s_16` |
+| 每张 GPU 的 batch size | `16`（显存允许时可增至 `32`） |
+| 训练轮数 | `300` |
 | DINO 输出维度 | `8192` |
-| local crop 数量 | `4` |
+| local crop 数量 | `8` |
+| student drop path | `0.1` |
+| teacher momentum | `0.9995 → 1.0` |
+| teacher temperature | `0.04 → 0.07`，前 30 轮预热 |
 | 混合精度 | 开启 |
 
-如果显存不足，可以优先减小 `batch_size_per_gpu`，或者将模型改为 `vit_s_16` / `vit_t_16`。
+如果显存不足，可以优先减小 `batch_size_per_gpu`，或者将模型改为 `vit_t_16`。
 
 ## 5. 训练输出
 
 训练结果默认保存在：
 
 ```text
-dino/outputs/
+dino/weights/vits16/
 ```
 
 其中：
@@ -80,7 +88,59 @@ dino/outputs/
 
 再次启动训练时，如果 `checkpoint.pth` 存在，脚本会自动恢复模型、优化器、学习率调度器和 DINO loss 状态。
 
-## 6. 运行前检查
+原来的 ViT-B checkpoint 仍保留在 `dino/weights/checkpoint.pth`，新配置不会覆盖它。
+
+## 6. 正式 k-NN evaluation
+
+评估脚本冻结 DINO backbone，使用完整 Imagenette `train` split 建立归一化特征库，再在完整 `val` split 上执行余弦相似度加权 k-NN，报告 Top-1 和 Top-5。
+
+评估新 ViT-S checkpoint：
+
+```bash
+cd /Users/frank/code/ai/handbyhand
+.venv/bin/python -m dino.eval_knn
+```
+
+评估原来的 ViT-B checkpoint：
+
+```bash
+.venv/bin/python -m dino.eval_knn \
+  --checkpoint dino/weights/checkpoint.pth
+```
+
+默认参数为 `k=20`、温度 `0.07`、评估 teacher。模型结构会从 checkpoint 自动读取。结果同时打印到终端并保存为 checkpoint 同目录下的 `knn_eval.json`。
+
+常用参数：
+
+```bash
+.venv/bin/python -m dino.eval_knn \
+  --checkpoint dino/weights/vits16/checkpoint.pth \
+  --checkpoint-key teacher \
+  --batch-size 128 \
+  --k 20 \
+  --temperature 0.07 \
+  --device cuda
+```
+
+## 7. 注意力可视化
+
+可视化脚本会从 checkpoint 自动读取模型结构，避免把 ViT-S 权重加载到 ViT-B。新 checkpoint 训练完成后运行：
+
+```bash
+.venv/bin/python -m dino.visualize
+```
+
+可视化旧 ViT-B checkpoint：
+
+```bash
+.venv/bin/python -m dino.visualize \
+  --pretrained-weights dino/weights/checkpoint.pth \
+  --image-path dino/images/fish.png
+```
+
+这些输出是最后一层 CLS self-attention，不是监督分割结果；应使用 k-NN Top-1/Top-5 作为主要定量指标。
+
+## 8. 运行前检查
 
 ```bash
 cd /Users/frank/code/ai/handbyhand
@@ -93,7 +153,7 @@ cd /Users/frank/code/ai/handbyhand
 - `GPU count` 至少为 `1`。
 - `datasets/imagenette2-160/train` 已存在并包含类别子目录。
 
-## 7. 常见问题
+## 9. 常见问题
 
 ### 相对导入失败
 

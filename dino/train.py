@@ -107,32 +107,36 @@ def train_dino():
     args = Namespace(
         img_size=224,
         num_classes=0,
-        model="vit_b_16",
-        batch_size=32,
+        model="vit_s_16",
         num_workers=4,
         out_dim=8192,
         use_bn_in_head=False,
         norm_last_layer=True,
+        drop_path_rate=0.1,
         global_crops_scale=(0.4, 1.0),  # global_crop的裁剪比例
         local_crops_scale=(0.05, 0.4),  # local_crop的裁剪比例
-        local_crops_number=4,  # local_crop的数量
+        local_crops_number=8,  # local_crop的数量
         epochs=300,
         lr=0.0005,
         min_lr=1e-6,
         warmup_epochs=10,  # 预热轮数
         weight_decay=0.04,
         weight_decay_end=0.4,
-        momentum_teacher=0.996,
+        # 小 batch 下让 teacher 更新得更平稳，避免过快追随 student 的噪声
+        # 官方建议小 batch 使用更高的 EMA momentum；可以单独测试 0.999 或 0.9995
+        momentum_teacher=0.9995,
         use_fp16=True,
         warmup_teacher_temp=0.04,
-        teacher_temp=0.04,
-        warmup_teacher_temp_epochs=0,
+        # 300 epoch 配置：先把 teacher 温度从 0.04 预热到 0.07，避免目标过早变成近似 one-hot
+        teacher_temp=0.07,
+        warmup_teacher_temp_epochs=30,
         clip_grad=3.0,  # 梯度裁剪限制范围
         freeze_last_layer=1,
         dist_url="env://",
         seed=0,
-        batch_size_per_gpu=8,
-        output_dir=f"{root}/weights",
+        batch_size_per_gpu=16,
+        # 保留旧的 ViT-B checkpoint；新结构必须从头训练并写入独立目录
+        output_dir=f"{root}/weights/vits16",
         saveckp_freq=20,  # 隔多少轮保存一次权重
     )
 
@@ -179,7 +183,10 @@ def train_dino():
 
     # ============ 构建student和teacher网络 ... ============
     student = build_model(args)
-    teacher = build_model(args)
+    # stochastic depth 只用于 student；teacher 与官方实现一致，保持 drop_path=0
+    teacher_args = Namespace(**vars(args))
+    teacher_args.drop_path_rate = 0.0
+    teacher = build_model(teacher_args)
     # 采样器确保各GPU进程读取不重叠的数据切片
     sampler = torch.utils.data.DistributedSampler(
         dataset,

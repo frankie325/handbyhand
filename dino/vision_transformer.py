@@ -114,7 +114,7 @@ class Attention(nn.Module):
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
-        return x
+        return x, attn
 
 
 # ---------------------------------------------------------------------------
@@ -154,9 +154,12 @@ class Block(nn.Module):
             drop=drop,
         )
 
-    def forward(self, x):
+    def forward(self, x, return_attention=False):
+        y, attn = self.attn(self.norm1(x))
+        if return_attention:
+            return attn
         # 注意力分支
-        x = x + self.drop_path(self.attn(self.norm1(x)))
+        x = x + self.drop_path(y)
         # 前馈分支
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
@@ -400,9 +403,7 @@ class DINOHead(nn.Module):
     def forward(self, x):
         x = self.mlp(x)  # [batch_size, bottleneck_dim=256]
         x = nn.functional.normalize(x, dim=-1, p=2)  # L2 归一化到单位向量
-        x = self.last_layer(
-            x
-        )  # [batch_size, out_dim]
+        x = self.last_layer(x)  # [batch_size, out_dim]
         return x
 
 
