@@ -60,7 +60,7 @@ cd /Users/frank/code/ai/handbyhand
 | 参数 | 默认值 |
 | --- | --- |
 | 模型 | `vit_s_16` |
-| 每张 GPU 的 batch size | `16`（显存允许时可增至 `32`） |
+| 每张 GPU 的 batch size | `64` |
 | 训练轮数 | `300` |
 | DINO 输出维度 | `8192` |
 | local crop 数量 | `8` |

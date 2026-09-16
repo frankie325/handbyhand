@@ -134,7 +134,7 @@ def train_dino():
         freeze_last_layer=1,
         dist_url="env://",
         seed=0,
-        batch_size_per_gpu=16,
+        batch_size_per_gpu=64,
         # 保留旧的 ViT-B checkpoint；新结构必须从头训练并写入独立目录
         output_dir=f"{root}/weights/vits16",
         saveckp_freq=20,  # 隔多少轮保存一次权重
