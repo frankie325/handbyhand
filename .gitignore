@@ -21,6 +21,7 @@ env/
 /rf-detr/
 /rtdetr_official/
 /dino_official/
+/dinov2-main/
 /datasets/
 
 # 训练产物
