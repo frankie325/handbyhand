@@ -267,10 +267,14 @@ def enable(
             _check_env_variable(key, value)
         os.environ[key] = value
 
-    dist.init_process_group(backend="nccl")
-    dist.barrier()
-
-    # Finalize setup
-    _LOCAL_RANK = torch_env.local_rank
-    _LOCAL_WORLD_SIZE = torch_env.local_world_size
-    _restrict_print_to_main_process()
+    # 单机单卡(local_world_size==1)时无需初始化进程组；Windows 也不提供 NCCL 后端。
+    # 此时保持分布式未启用，get_global_size() 等辅助函数会按单机单卡返回默认值。
+    if torch_env.local_world_size > 1:
+        import sys
+        backend = "nccl" if sys.platform != "win32" else "gloo"
+        dist.init_process_group(backend=backend)
+        dist.barrier()
+        # Finalize setup
+        _LOCAL_RANK = torch_env.local_rank
+        _LOCAL_WORLD_SIZE = torch_env.local_world_size
+        _restrict_print_to_main_process()
