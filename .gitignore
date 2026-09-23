@@ -17,7 +17,12 @@ env/
 .vscode/
 .codegraph/
 .cursor/
+.hf/
 *data/
+# `*data/` 用于忽略训练数据目录，但 dinov2-m/dinov2/data 是源码包。
+!dinov2-m/dinov2/data/
+!dinov2-m/dinov2/data/**/*.py
+!dinov2-m/dinov2/data/**/*.md
 /rf-detr/
 /rtdetr_official/
 /dino_official/
