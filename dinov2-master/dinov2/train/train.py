@@ -22,6 +22,8 @@ from dinov2.utils.utils import CosineScheduler
 from dinov2.train.ssl_meta_arch import SSLMetaArch
 import dinov2.distributed as distributed
 
+torch.backends.cuda.matmul.allow_tf32 = True  # PyTorch 1.12 sets this to False by default
+logger = logging.getLogger("dinov2")
 
 def get_args_parser(add_help: bool = True):
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
