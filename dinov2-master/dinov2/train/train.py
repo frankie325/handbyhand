@@ -150,7 +150,10 @@ def do_train(cfg, model, resume=False):
     # 单机单卡未用 FSDP 时，模型参数仍是 float32，若输入转成 half 会与
     # 参数的 float 类型不匹配，因此改用 float32。
     inputs_dtype = torch.half if is_enabled() else torch.float32
-    fp16_scaler = model.fp16_scaler  # for mixed precision training
+    # 单卡（未启用分布式）时，模型参数是普通 float32，且没有 FSDP 分片，
+    # 不应使用依赖进程组的 ShardedGradScaler，否则可能触发分布式相关报错；
+    # 此时置为 None，走普通 loss.backward() 路径。
+    fp16_scaler = model.fp16_scaler if distributed.is_enabled() else None
 
     # 优化器
     optimizer = build_optimizer(cfg, model.get_params_groups())

@@ -46,6 +46,9 @@ def write_config(cfg, output_dir, name="config.yaml"):
 def get_cfg_from_args(args):
     args.output_dir = os.path.abspath(args.output_dir)
     print(args.output_dir)
+    # opts 默认可能为 None（未传任何命令行覆盖项），先规整成列表，
+    # 避免 "None += [...]" 触发 TypeError。
+    args.opts = list(args.opts or [])
     args.opts += [f"train.output_dir={args.output_dir}"]
     default_cfg = OmegaConf.create(dinov2_default_config)
     cfg = OmegaConf.load(args.config_file)

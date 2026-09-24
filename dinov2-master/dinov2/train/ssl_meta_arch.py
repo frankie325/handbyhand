@@ -38,8 +38,14 @@ class SSLMetaArch(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
+        # 仅在启用分布式(FSDP)时才创建 ShardedGradScaler 做fp16梯度缩放。
+        # 单机单卡未走FSDP、模型为纯float32时不能创建它：否则 backprop_loss
+        # 会用它放大 loss 后 backward，而 do_train 的单卡分支(fp16_scaler=None)
+        # 不会 unscale，导致梯度被放大数万倍、训练发散/NaN。
         self.fp16_scaler = (
-            ShardedGradScaler() if cfg.compute_precision.grad_scaler else None
+            ShardedGradScaler()
+            if cfg.compute_precision.grad_scaler and distributed.is_enabled()
+            else None
         )
 
         student_model_dict = dict()
@@ -578,6 +584,11 @@ class SSLMetaArch(nn.Module):
         return loss_dict
 
     def fsdp_synchronize_streams(self):
+        # 单机单卡（未启用 FSDP）时，普通模块没有 _streams 属性，
+        # 跳过即可，否则会触发 AttributeError。
+        if not distributed.is_enabled():
+            self.need_to_synchronize_fsdp_streams = False
+            return
         if self.need_to_synchronize_fsdp_streams:
             torch.cuda.synchronize()
             self.student.dino_head._streams = self.teacher.dino_head._streams = (
@@ -590,11 +601,18 @@ class SSLMetaArch(nn.Module):
         teacher_param_list = []
         with torch.no_grad():
             for k in self.student.keys():
-                for ms, mt in zip(
-                    get_fsdp_modules(self.student[k]), get_fsdp_modules(self.teacher[k])
-                ):
-                    student_param_list += ms.params
-                    teacher_param_list += mt.params
+                student_fsdp_modules = get_fsdp_modules(self.student[k])
+                teacher_fsdp_modules = get_fsdp_modules(self.teacher[k])
+                if student_fsdp_modules and teacher_fsdp_modules:
+                    # 多卡 FSDP：按分片单元对齐 student/teacher 参数做 EMA
+                    for ms, mt in zip(student_fsdp_modules, teacher_fsdp_modules):
+                        student_param_list += ms.params
+                        teacher_param_list += mt.params
+                else:
+                    # 单机单卡（未启用 FSDP）：普通模块没有分片单元，
+                    # 直接用 .parameters() 做 EMA 更新，否则 teacher 永远不会更新。
+                    student_param_list += list(self.student[k].parameters())
+                    teacher_param_list += list(self.teacher[k].parameters())
             torch._foreach_mul_(teacher_param_list, m)
             torch._foreach_add_(teacher_param_list, student_param_list, alpha=1 - m)
 
