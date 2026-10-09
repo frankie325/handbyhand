@@ -1,0 +1,56 @@
+experiment_name: local_raod
+seed: 42
+device: auto
+
+data:
+  image_dir: ../datasets/RAOD-benchmark/select_1000_images
+  train_annotations: ../datasets/RAOD-benchmark/annotations/instances_train.json
+  val_annotations: ../datasets/RAOD-benchmark/annotations/instances_val.json
+  num_classes: 1
+  class_names: [abandoned_object]
+  resolution: 320
+  horizontal_flip: 0.5
+  color_jitter: 0.1
+  random_scale_min: 0.8
+  random_scale_max: 1.0
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  backbone: dinov2
+  dinov2_name: facebook/dinov2-small
+  feature_layers: [3, 6, 9, 12]
+  num_windows: 2
+  window_block_indexes: [0, 1, 3, 4, 6, 7, 9, 10]
+  freeze_backbone: true
+  hidden_dim: 192
+  num_queries: 100
+  num_decoder_layers: 3
+  num_heads: 8
+  num_points: 2
+  dropout: 0.0
+
+train:
+  output_dir: outputs/local_raod
+  epochs: 50
+  batch_size: 1
+  num_workers: 0
+  learning_rate: 0.0001
+  backbone_learning_rate: 0.00001
+  weight_decay: 0.0001
+  warmup_steps: 100
+  gradient_clip_norm: 0.1
+  gradient_accumulation_steps: 4
+  amp: false
+  validate_every: 1
+  log_every: 20
+  resume: null
+
+nas:
+  enabled: false
+  resolutions: [320, 384, 512]
+  query_counts: [50, 100]
+  decoder_depths: [2, 3]
+  eval_batches: 20
+  latency_warmup: 5
+  latency_runs: 20

@@ -1,0 +1,56 @@
+experiment_name: local_smoke
+seed: 42
+device: auto
+
+data:
+  image_dir: ../datasets/RAOD-benchmark/select_1000_images
+  train_annotations: ../datasets/RAOD-benchmark/annotations/instances_train.json
+  val_annotations: ../datasets/RAOD-benchmark/annotations/instances_val.json
+  num_classes: 1
+  class_names: [abandoned_object]
+  resolution: 224
+  horizontal_flip: 0.5
+  color_jitter: 0.1
+  random_scale_min: 0.9
+  random_scale_max: 1.0
+  max_train_samples: 16
+  max_val_samples: 16
+
+model:
+  backbone: tiny_vit
+  dinov2_name: facebook/dinov2-small
+  feature_layers: [0, 1, 2, 3]
+  num_windows: 2
+  window_block_indexes: [0, 2]
+  freeze_backbone: false
+  hidden_dim: 128
+  num_queries: 50
+  num_decoder_layers: 2
+  num_heads: 4
+  num_points: 2
+  dropout: 0.0
+
+train:
+  output_dir: outputs/local_smoke
+  epochs: 20
+  batch_size: 2
+  num_workers: 0
+  learning_rate: 0.0002
+  backbone_learning_rate: 0.0001
+  weight_decay: 0.0001
+  warmup_steps: 10
+  gradient_clip_norm: 0.1
+  gradient_accumulation_steps: 1
+  amp: false
+  validate_every: 1
+  log_every: 1
+  resume: null
+
+nas:
+  enabled: false
+  resolutions: [224]
+  query_counts: [25, 50]
+  decoder_depths: [1, 2]
+  eval_batches: 4
+  latency_warmup: 2
+  latency_runs: 5
