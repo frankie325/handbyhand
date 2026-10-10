@@ -1582,7 +1582,10 @@ class WindowedDinov2WithRegistersBackbone(
         return BackboneOutput(
             # The HF stub types `feature_maps` as a fixed 1-tuple, but a multi-stage
             # backbone genuinely returns a variable-length tuple of feature maps.
-            feature_maps=cast(Any, feature_maps), # (batch_size, dim, num_h_patches, num_w_patches),...)
+            # feature_maps 里不同层的特征图宽高（以及通道数）完全相同，区别仅在于特征来自不同深度、语义抽象程度不同
+            feature_maps=cast(
+                Any, feature_maps
+            ),  # (batch_size, dim, num_h_patches, num_w_patches),...)
             hidden_states=outputs.hidden_states if output_hidden_states else None,
             attentions=outputs.attentions if output_attentions else None,
         )

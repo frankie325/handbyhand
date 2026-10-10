@@ -90,7 +90,7 @@ def compute_window_block_indexes(
     return sorted(window_block_indexes_set)
 
 
-class Dinov2(nn.Module):
+class DinoV2(nn.Module):
     def __init__(
         self,
         shape: tuple[int, int] = (640, 640),
@@ -220,6 +220,7 @@ class Dinov2(nn.Module):
                 else WindowedDinov2WithRegistersBackbone(windowed_dino_config)
             )
 
+        # 如果是base 模型：则4个输出特征图的d_model维度为[768, 768, 768, 768]
         self._out_feature_channels = [size_to_width[size]] * len(out_feature_indexes)
         self._export = False
 
